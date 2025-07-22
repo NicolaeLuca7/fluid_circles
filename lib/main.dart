@@ -10,7 +10,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_processing/flutter_processing.dart';
-import 'package:gallery_saver/gallery_saver.dart';
+// import 'package:gallery_saver/gallery_saver.dart';
+import 'dart:typed_data';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'dart:ui' as ui;
@@ -111,7 +114,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void initState() {
-    SystemChrome.setEnabledSystemUIOverlays([]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     super.initState();
     controller =
         AnimationController(duration: Duration(milliseconds: 400), vsync: this);
@@ -145,7 +148,7 @@ class _MyHomePageState extends State<MyHomePage>
     try {
       RenderRepaintBoundary boundary = _keyCustomPaint.currentContext
           ?.findRenderObject() as RenderRepaintBoundary;
-      ui.Image image = (await boundary.toImage(pixelRatio: 1.0));
+      ui.Image image = (await boundary.toImage(pixelRatio: 5.0));
       ByteData? byteData =
           await image.toByteData(format: ui.ImageByteFormat.png);
       pngBytes = byteData!.buffer.asUint8List();
@@ -1081,12 +1084,14 @@ class _MyHomePageState extends State<MyHomePage>
                                     await file.writeAsBytes(bytes);
                                   } else if (Platform.isAndroid ||
                                       Platform.isIOS) {
-                                    var appDocDir =
-                                        await getExternalStorageDirectory();
-                                    path = '${appDocDir!.path}/$filename';
-                                    file = File(path);
-                                    await file.writeAsBytes(bytes);
-                                    await GallerySaver.saveImage(path);
+                                    var val = (await Permission.photos.status);
+                                    final permission = await Permission.photos.request(); // for iOS & Android 13+
+                                    if (permission.isGranted) {
+                                        final result = await ImageGallerySaverPlus
+                                            .saveImage(bytes);
+
+                                    }
+
                                   }
                                 },
                                 icon:
